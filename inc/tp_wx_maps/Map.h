@@ -3,39 +3,28 @@
 
 #include "tp_wx_maps/Globals.h"
 
-#include "tp_maps/Map.h"
+#include <wx/glcanvas.h>
+
+namespace tp_maps
+{
+class Map;
+}
 
 namespace tp_wx_maps
 {
 
 //##################################################################################################
-class TP_WX_MAPS_SHARED_EXPORT Map : public tp_maps::Map
+class TP_WX_MAPS_SHARED_EXPORT Map : public wxGLCanvas
 {
 public:
   //################################################################################################
-  Map(bool enableDepthBuffer = true, bool fullScreen = false, const std::string& title=std::string());
+  Map(wxWindow* parent, bool enableDepthBuffer = true, bool fullScreen = false, const wxString& title=wxString());
 
   //################################################################################################
   ~Map() override;
 
   //################################################################################################
-  void exec();
-
-  //################################################################################################
-  void processEvents();
-
-  //################################################################################################
-  void makeCurrent() override;
-
-  //################################################################################################
-  //! Called to queue a refresh
-  void update() override;
-
-  //################################################################################################
-  void setRelativeMouseMode(bool enabled) override;
-
-  //################################################################################################
-  bool relativeMouseMode() const override;
+  tp_maps::Map* map() const;
 
 private:
   struct Private;

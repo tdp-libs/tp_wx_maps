@@ -1,25 +1,20 @@
 #include "tp_wx_maps/Map.h"
 
+#include "tp_maps/Map.h"
 #include "tp_maps/MouseEvent.h"
 #include "tp_maps/KeyEvent.h"
 
 #include "tp_utils/TimeUtils.h"
 #include "tp_utils/DebugUtils.h"
 
-// #ifdef EMSCRIPTEN
-// #include "SDL.h"
-// #include <SDL_image.h>
-// #include "emscripten.h"
-// #else
-// #include <SDL2/SDL.h>
-// #endif
-
 namespace tp_wx_maps
 {
+
 //##################################################################################################
-struct Map::Private
+struct Map::Private final: public tp_maps::Map
 {
-  Map* q;
+  friend class tp_wx_maps::Map;
+  tp_wx_maps::Map* q;
   // SDL_Window *window{nullptr};
   // SDL_GLContext context{nullptr};
 
@@ -31,19 +26,27 @@ struct Map::Private
   bool quitting{false};
 
   //################################################################################################
-  Private(Map* q_):
+  Private(tp_wx_maps::Map* q_, bool enableDepthBuffer):
+    tp_maps::Map(enableDepthBuffer),
     q(q_)
   {
 
   }
 
-// #ifdef EMSCRIPTEN
-//   //################################################################################################
-//   static void updateCallback(void* opaque)
-//   {
-//     static_cast<Private*>(opaque)->update();
-//   }
-// #endif
+  //################################################################################################
+  ~Private() override;
+
+  //################################################################################################
+  void makeCurrent() override
+  {
+    //  SDL_GL_MakeCurrent(d->window, d->context);
+  }
+
+  //################################################################################################
+  void update() override
+  {
+    // Trigger a repaint here.
+  }
 
 //  //################################################################################################
 //  void update()
@@ -171,152 +174,29 @@ struct Map::Private
 };
 
 //##################################################################################################
-Map::Map(bool enableDepthBuffer, bool fullScreen, const std::string& title):
-  tp_maps::Map(enableDepthBuffer),
-  d(new Private(this))
+Map::Private::~Private()
 {
-//#ifdef EMSCRIPTEN
-//  SDL_Renderer *renderer = nullptr;
-//  SDL_CreateWindowAndRenderer(512, 512, SDL_WINDOW_OPENGL, &d->window, &renderer);
-//#else
-//  if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS) != 0)
-//  {
-//    tpWarning() << "Failed to initialize SDL: " << SDL_GetError();
-//    return;
-//  }
 
-//  if(fullScreen)
-//  {
-//    d->window = SDL_CreateWindow(title.c_str(),
-//                                 SDL_WINDOWPOS_UNDEFINED,
-//                                 SDL_WINDOWPOS_UNDEFINED,
-//                                 512,
-//                                 512,
-//                                 SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN_DESKTOP);
-//    SDL_SetRelativeMouseMode(SDL_TRUE);
-//  }
-//  else
-//  {
-//    d->window = SDL_CreateWindow(title.c_str(),
-//                                 SDL_WINDOWPOS_UNDEFINED,
-//                                 SDL_WINDOWPOS_UNDEFINED,
-//                                 512,
-//                                 512,
-//                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-//  }
+}
 
-//  if(!d->window)
-//  {
-//    tpWarning() << "Failed to create SDL window: " << SDL_GetError();
-//    return;
-//  }
-
-//  // Try OpenGL 3.3 first this is our prefered configuration.
-//  if(!d->context)
-//  {
-//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-//    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-//    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-//    //SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
-
-//    d->context = SDL_GL_CreateContext(d->window);
-//    setOpenGLProfile(tp_maps::OpenGLProfile::VERSION_330);
-//  }
-
-//  // If we fail to get a context try 2.1
-//  if(!d->context)
-//  {
-//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-
-//    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-//    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-//    //SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
-
-//    d->context = SDL_GL_CreateContext(d->window);
-//    setOpenGLProfile(tp_maps::OpenGLProfile::VERSION_120);
-//  }
-
-//  SDL_GL_SetSwapInterval(-1);
-//#endif
-
-//  initializeGL();
-
-//  {
-//    int w{0};
-//    int h{0};
-//    SDL_GetWindowSize(d->window, &w, &h);
-//    resizeGL(w, h);
-//  }
+//##################################################################################################
+Map::Map(wxWindow* parent, bool enableDepthBuffer, bool fullScreen, const wxString& title):
+  wxGLCanvas(parent, wxID_ANY,  wxDefaultPosition, wxDefaultSize, 0, title),
+  d(new Private(this, enableDepthBuffer))
+{
 }
 
 //##################################################################################################
 Map::~Map()
 {
-  preDelete();
-
-//#ifdef EMSCRIPTEN
-
-//#else
-//  SDL_GL_DeleteContext(d->context);
-//  SDL_DestroyWindow(d->window);
-//  SDL_Quit();
-//#endif
-
+  d->preDelete();
   delete d;
 }
 
 //##################################################################################################
-void Map::exec()
+tp_maps::Map* Map::map() const
 {
-//#ifdef EMSCRIPTEN
-//  emscripten_set_main_loop_arg(Private::updateCallback, d, 20, 1);
-//#else
-//  while(!d->quitting)
-//  {
-//    processEvents();
-//    SDL_Delay(16);
-//  }
-//#endif
+  return d;
 }
-
-//##################################################################################################
-void Map::processEvents()
-{
-//#ifdef EMSCRIPTEN
-//  tpWarning() << "Error Map::processEvents Does not work with Emscripten, use exec()";
-//#else
-//  d->update();
-//#endif
-}
-
-//##################################################################################################
-void Map::makeCurrent()
-{
-//  SDL_GL_MakeCurrent(d->window, d->context);
-}
-
-//##################################################################################################
-void Map::update()
-{
-  d->paint = true;
-}
-
-//##################################################################################################
-void Map::setRelativeMouseMode(bool enabled)
-{
-//  SDL_SetRelativeMouseMode(enabled?SDL_TRUE:SDL_FALSE);
-}
-
-//##################################################################################################
-bool Map::relativeMouseMode() const
-{
-//  return SDL_GetRelativeMouseMode() == SDL_TRUE;
-}
-
 
 }
