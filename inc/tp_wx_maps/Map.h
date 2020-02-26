@@ -18,13 +18,32 @@ class TP_WX_MAPS_SHARED_EXPORT Map : public wxGLCanvas
 {
 public:
   //################################################################################################
-  Map(wxWindow* parent, bool enableDepthBuffer = true, bool fullScreen = false, const wxString& title=wxString());
+  Map(wxWindow* parent, bool enableDepthBuffer = true, const wxString& title=wxString());
 
   //################################################################################################
   ~Map() override;
 
   //################################################################################################
   tp_maps::Map* map() const;
+
+protected:
+    void paintEvent(wxPaintEvent& event);
+    void mouseMovedEvent(wxMouseEvent& event);
+    void mouseDownEvent(wxMouseEvent& event);
+    void mouseWheelMovedEvent(wxMouseEvent& event);
+    void mouseReleasedEvent(wxMouseEvent& event);
+    void resizedEvent(wxSizeEvent& event);
+    void keyPressedEvent(wxKeyEvent& event);
+    void keyReleasedEvent(wxKeyEvent& event);
+
+private:
+    static const wxEventTableEntry sm_eventTableEntries[];
+
+protected:
+    static const wxEventTable sm_eventTable;
+    const wxEventTable*       GetEventTable() const override;
+    static wxEventHashTable   sm_eventHashTable;
+    wxEventHashTable&         GetEventHashTable() const override;
 
 private:
   struct Private;

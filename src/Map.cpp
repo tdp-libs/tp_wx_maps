@@ -15,15 +15,7 @@ struct Map::Private final: public tp_maps::Map
 {
   friend class tp_wx_maps::Map;
   tp_wx_maps::Map* q;
-  // SDL_Window *window{nullptr};
-  // SDL_GLContext context{nullptr};
-
   glm::ivec2 mousePos{0,0};
-
-  int64_t animationTimeMS{0};
-
-  bool paint{true};
-  bool quitting{false};
 
   //################################################################################################
   Private(tp_wx_maps::Map* q_, bool enableDepthBuffer):
@@ -39,138 +31,14 @@ struct Map::Private final: public tp_maps::Map
   //################################################################################################
   void makeCurrent() override
   {
-    //  SDL_GL_MakeCurrent(d->window, d->context);
+    q->SetCurrent();
   }
 
   //################################################################################################
   void update() override
   {
-    // Trigger a repaint here.
+    q->Refresh();
   }
-
-//  //################################################################################################
-//  void update()
-//  {
-//    SDL_Event event;
-//    while(SDL_PollEvent(&event))
-//    {
-//      switch(event.type)
-//      {
-
-//      case SDL_QUIT: //-----------------------------------------------------------------------------
-//      {
-//        quitting = true;
-//        break;
-//      }
-
-//      case SDL_MOUSEBUTTONDOWN: //------------------------------------------------------------------
-//      {
-//        tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
-//        e.pos = {event.button.x, event.button.y};
-//        switch (event.button.button)
-//        {
-//        case SDL_BUTTON_LEFT:  e.button = tp_maps::Button::LeftButton;  break;
-//        case SDL_BUTTON_RIGHT: e.button = tp_maps::Button::RightButton; break;
-//        default:               e.button = tp_maps::Button::NoButton;    break;
-//        }
-//        q->mouseEvent(e);
-//        break;
-//      }
-
-//      case SDL_MOUSEBUTTONUP: //--------------------------------------------------------------------
-//      {
-//        tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
-//        e.pos = {event.button.x, event.button.y};
-//        switch (event.button.button)
-//        {
-//        case SDL_BUTTON_LEFT:  e.button = tp_maps::Button::LeftButton;  break;
-//        case SDL_BUTTON_RIGHT: e.button = tp_maps::Button::RightButton; break;
-//        default:               e.button = tp_maps::Button::NoButton;    break;
-//        }
-//        q->mouseEvent(e);
-//        break;
-//      }
-
-//      case SDL_MOUSEMOTION: //----------------------------------------------------------------------
-//      {
-//        tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
-//        mousePos = {event.motion.x, event.motion.y};
-//        e.pos = mousePos;
-//        e.posDelta = {event.motion.xrel, event.motion.yrel};
-//        q->mouseEvent(e);
-//        break;
-//      }
-
-//      case SDL_MOUSEWHEEL: //-----------------------------------------------------------------------
-//      {
-//        tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
-//        e.pos = mousePos;
-//        e.delta = event.wheel.y;
-//        q->mouseEvent(e);
-//        break;
-//      }
-
-//      case SDL_WINDOWEVENT: //----------------------------------------------------------------------
-//      {
-//        if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-//        {
-//          q->resizeGL(event.window.data1, event.window.data2);
-//          paint = true;
-//        }
-//        else if (event.window.event == SDL_WINDOWEVENT_SHOWN || event.window.event == SDL_WINDOWEVENT_EXPOSED)
-//        {
-//          paint = true;
-//        }
-
-//        break;
-//      }
-
-//      case SDL_KEYDOWN: //--------------------------------------------------------------------------
-//      {
-//        tp_maps::KeyEvent e(tp_maps::KeyEventType::Press);
-//        e.scancode = event.key.keysym.scancode;
-//        q->keyEvent(e);
-//        break;
-//      }
-
-//      case SDL_KEYUP: //----------------------------------------------------------------------------
-//      {
-//        if(event.key.keysym.scancode == 41)
-//          quitting = true;
-
-//        tp_maps::KeyEvent e(tp_maps::KeyEventType::Release);
-//        e.scancode = event.key.keysym.scancode;
-//        q->keyEvent(e);
-//        break;
-//      }
-
-//      default: //-----------------------------------------------------------------------------------
-//      {
-//        break;
-//      }
-//      }
-//    }
-
-//    if(const auto t = tp_utils::currentTimeMS(); animationTimeMS<t)
-//    {
-//      animationTimeMS = t+8;
-//      q->makeCurrent();
-//      q->animate(double(t));
-//    }
-
-//    if(paint)
-//    {
-//#if 0
-//  static tp_utils::ElapsedTimer t;
-//  auto a=t.restart();
-//  TP_CLEANUP([&]{tpWarning() << "External: " << a << " Internal:" << t.restart();});
-//#endif
-//      paint = false;
-//      q->makeCurrent();
-//      q->paintGL();
-//      SDL_GL_SwapWindow(window);
-//    }
-//  }
 };
 
 //##################################################################################################
@@ -180,7 +48,7 @@ Map::Private::~Private()
 }
 
 //##################################################################################################
-Map::Map(wxWindow* parent, bool enableDepthBuffer, bool fullScreen, const wxString& title):
+Map::Map(wxWindow* parent, bool enableDepthBuffer, const wxString& title):
   wxGLCanvas(parent, wxID_ANY,  wxDefaultPosition, wxDefaultSize, 0, title),
   d(new Private(this, enableDepthBuffer))
 {
@@ -198,5 +66,101 @@ tp_maps::Map* Map::map() const
 {
   return d;
 }
+
+//##################################################################################################
+void Map::paintEvent(wxPaintEvent& event)
+{
+  TP_UNUSED(event);
+  d->makeCurrent();
+  d->paintGL();
+  glFlush();
+  SwapBuffers();
+}
+
+//##################################################################################################
+void Map::mouseMovedEvent(wxMouseEvent& event)
+{
+  tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
+  e.posDelta = glm::ivec2(event.GetX(), event.GetY()) - d->mousePos;
+  d->mousePos = {event.GetX(), event.GetY()};
+  e.pos = d->mousePos;
+  d->mouseEvent(e);
+}
+
+//##################################################################################################
+void Map::mouseDownEvent(wxMouseEvent& event)
+{
+  tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
+  e.pos = {event.GetX(), event.GetY()};
+  switch (event.GetButton())
+  {
+  case wxMOUSE_BTN_LEFT:   e.button = tp_maps::Button::LeftButton;   break;
+  case wxMOUSE_BTN_RIGHT:  e.button = tp_maps::Button::RightButton;  break;
+  case wxMOUSE_BTN_MIDDLE: e.button = tp_maps::Button::MiddleButton; break;
+  default:                 e.button = tp_maps::Button::NoButton;     break;
+  }
+  d->mouseEvent(e);
+}
+
+//##################################################################################################
+void Map::mouseWheelMovedEvent(wxMouseEvent& event)
+{
+  tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
+  e.pos = d->mousePos;    
+  e.delta = event.GetWheelRotation();
+  d->mouseEvent(e);
+}
+
+//##################################################################################################
+void Map::mouseReleasedEvent(wxMouseEvent& event)
+{
+  tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
+  e.pos = {event.GetX(), event.GetY()};
+  switch (event.GetButton())
+  {
+  case wxMOUSE_BTN_LEFT:   e.button = tp_maps::Button::LeftButton;   break;
+  case wxMOUSE_BTN_RIGHT:  e.button = tp_maps::Button::RightButton;  break;
+  case wxMOUSE_BTN_MIDDLE: e.button = tp_maps::Button::MiddleButton; break;
+  default:                 e.button = tp_maps::Button::NoButton;     break;
+  }
+  d->mouseEvent(e);
+}
+
+//##################################################################################################
+void Map::resizedEvent(wxSizeEvent& event)
+{
+  d->resizeGL(event.GetSize().GetWidth(), event.GetSize().GetHeight());
+}
+
+//##################################################################################################
+void Map::keyPressedEvent(wxKeyEvent& event)
+{
+  tp_maps::KeyEvent e(tp_maps::KeyEventType::Press);
+  e.scancode = event.GetKeyCode();
+  d->keyEvent(e);
+}
+
+//##################################################################################################
+void Map::keyReleasedEvent(wxKeyEvent& event)
+{
+  tp_maps::KeyEvent e(tp_maps::KeyEventType::Release);
+  e.scancode = event.GetKeyCode();
+  d->keyEvent(e);
+}
+
+BEGIN_EVENT_TABLE (Map, wxGLCanvas)
+EVT_PAINT       (Map::paintEvent          )
+EVT_MOTION      (Map::mouseMovedEvent     )
+EVT_LEFT_DOWN   (Map::mouseDownEvent      )
+EVT_LEFT_UP     (Map::mouseReleasedEvent  )
+EVT_RIGHT_DOWN  (Map::mouseDownEvent      )
+EVT_RIGHT_UP    (Map::mouseReleasedEvent  )
+EVT_MIDDLE_DOWN (Map::mouseDownEvent      )
+EVT_MIDDLE_UP   (Map::mouseReleasedEvent  )
+EVT_SIZE        (Map::resizedEvent        )
+EVT_KEY_DOWN    (Map::keyPressedEvent     )
+EVT_KEY_UP      (Map::keyReleasedEvent    )
+EVT_MOUSEWHEEL  (Map::mouseWheelMovedEvent)
+END_EVENT_TABLE()
 
 }
