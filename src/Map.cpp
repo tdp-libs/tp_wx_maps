@@ -10,6 +10,18 @@
 namespace tp_wx_maps
 {
 
+namespace
+{
+const int attribList[] =
+{
+  WX_GL_DEPTH_SIZE, 32,
+  WX_GL_CORE_PROFILE,
+  WX_GL_MAJOR_VERSION, 3,
+  WX_GL_MINOR_VERSION, 3,
+  0
+};
+}
+
 //##################################################################################################
 struct Map::Private final: public tp_maps::Map
 {
@@ -17,12 +29,15 @@ struct Map::Private final: public tp_maps::Map
   tp_wx_maps::Map* q;
   glm::ivec2 mousePos{0,0};
 
+  wxGLContext context;
+
   //################################################################################################
   Private(tp_wx_maps::Map* q_, bool enableDepthBuffer):
     tp_maps::Map(enableDepthBuffer),
-    q(q_)
+    q(q_),
+    context(q)
   {
-
+    setOpenGLProfile(tp_maps::OpenGLProfile::VERSION_330);
   }
 
   //################################################################################################
@@ -31,7 +46,7 @@ struct Map::Private final: public tp_maps::Map
   //################################################################################################
   void makeCurrent() override
   {
-    q->SetCurrent();
+    context.SetCurrent(*q);
   }
 
   //################################################################################################
@@ -48,8 +63,11 @@ Map::Private::~Private()
 }
 
 //##################################################################################################
-Map::Map(wxWindow* parent, bool enableDepthBuffer, const wxString& title):
-  wxGLCanvas(parent, wxID_ANY,  wxDefaultPosition, wxDefaultSize, 0, title),
+Map::Map(wxWindow* parent,
+         bool enableDepthBuffer,
+         const wxString& title,
+         tp_maps::OpenGLProfile openGLProfile):
+  wxGLCanvas(parent, wxID_ANY, attribList, wxDefaultPosition, wxDefaultSize, 0, title),
   d(new Private(this, enableDepthBuffer))
 {
 }

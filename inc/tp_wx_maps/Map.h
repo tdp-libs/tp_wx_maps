@@ -3,6 +3,8 @@
 
 #include "tp_wx_maps/Globals.h"
 
+#include "tp_maps/Globals.h"
+
 #include <wx/glcanvas.h>
 
 namespace tp_maps
@@ -18,7 +20,10 @@ class TP_WX_MAPS_SHARED_EXPORT Map : public wxGLCanvas
 {
 public:
   //################################################################################################
-  Map(wxWindow* parent, bool enableDepthBuffer = true, const wxString& title=wxString());
+  Map(wxWindow* parent,
+      bool enableDepthBuffer = true,
+      const wxString& title=wxString(),
+      tp_maps::OpenGLProfile openGLProfile=tp_maps::OpenGLProfile::VERSION_330);
 
   //################################################################################################
   ~Map() override;
