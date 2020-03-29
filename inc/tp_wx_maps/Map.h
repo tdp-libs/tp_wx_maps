@@ -21,9 +21,8 @@ class TP_WX_MAPS_SHARED_EXPORT Map : public wxGLCanvas
 public:
   //################################################################################################
   Map(wxWindow* parent,
-      bool enableDepthBuffer = true,
       const wxString& title=wxString(),
-      tp_maps::OpenGLProfile openGLProfile=tp_maps::OpenGLProfile::VERSION_330);
+      const tp_maps::OpenGLConfig& openGLConfig=tp_maps::OpenGLConfig());
 
   //################################################################################################
   ~Map() override;

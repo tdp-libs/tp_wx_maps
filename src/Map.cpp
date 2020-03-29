@@ -12,14 +12,28 @@ namespace tp_wx_maps
 
 namespace
 {
-const int attribList[] =
+//##################################################################################################
+const int* attribList(const tp_maps::OpenGLConfig& openGLConfig)
 {
-  WX_GL_DEPTH_SIZE, 32,
-  WX_GL_CORE_PROFILE,
-  WX_GL_MAJOR_VERSION, 3,
-  WX_GL_MINOR_VERSION, 3,
-  0
-};
+  static std::vector<int> attribList;
+  attribList.clear();
+
+  attribList.push_back(WX_GL_DEPTH_SIZE);
+  attribList.push_back(int(openGLConfig.depth));
+
+  if(int(openGLConfig.profile) >= int(tp_maps::OpenGLProfile::VERSION_130))
+    attribList.push_back(WX_GL_CORE_PROFILE);
+
+  attribList.push_back(WX_GL_MAJOR_VERSION);
+  attribList.push_back(int(openGLConfig.profile)/10);
+
+  attribList.push_back(WX_GL_MINOR_VERSION);
+  attribList.push_back(int(openGLConfig.profile) - ((int(openGLConfig.profile)/10) * 10));
+
+  attribList.push_back(0);
+
+  return attribList.data();
+}
 }
 
 //##################################################################################################
@@ -32,12 +46,13 @@ struct Map::Private final: public tp_maps::Map
   wxGLContext context;
 
   //################################################################################################
-  Private(tp_wx_maps::Map* q_, bool enableDepthBuffer):
-    tp_maps::Map(enableDepthBuffer),
+  Private(tp_wx_maps::Map* q_,
+          const tp_maps::OpenGLConfig& openGLConfig):
+    tp_maps::Map(openGLConfig.depth!=tp_maps::OpenGLDepth::OFF),
     q(q_),
     context(q)
   {
-    setOpenGLProfile(tp_maps::OpenGLProfile::VERSION_330);
+    setOpenGLProfile(openGLConfig.profile);
   }
 
   //################################################################################################
@@ -64,11 +79,10 @@ Map::Private::~Private()
 
 //##################################################################################################
 Map::Map(wxWindow* parent,
-         bool enableDepthBuffer,
          const wxString& title,
-         tp_maps::OpenGLProfile openGLProfile):
-  wxGLCanvas(parent, wxID_ANY, attribList, wxDefaultPosition, wxDefaultSize, 0, title),
-  d(new Private(this, enableDepthBuffer))
+         const tp_maps::OpenGLConfig& openGLConfig):
+  wxGLCanvas(parent, wxID_ANY, attribList(openGLConfig), wxDefaultPosition, wxDefaultSize, 0, title),
+  d(new Private(this, openGLConfig))
 {
 }
 
